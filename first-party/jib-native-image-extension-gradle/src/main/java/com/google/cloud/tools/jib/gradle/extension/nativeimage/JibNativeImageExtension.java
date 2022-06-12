@@ -37,6 +37,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import org.graalvm.buildtools.gradle.dsl.GraalVMExtension;
+import org.graalvm.buildtools.gradle.dsl.NativeImageOptions;
 import org.gradle.api.Project;
 import org.gradle.internal.impldep.com.google.common.annotations.VisibleForTesting;
 
@@ -66,7 +68,7 @@ public class JibNativeImageExtension implements JibGradlePluginExtension<Void> {
     }
     ContainerParameters jibContainer = jibPlugin.getContainer();
 
-    Optional<String> executableName = getExecutableName(jibContainer, properties);
+    Optional<String> executableName = getExecutableName(project, jibContainer, properties);
     if (!executableName.isPresent()) {
       throw new JibPluginExtensionException(
           getClass(),
@@ -108,9 +110,18 @@ public class JibNativeImageExtension implements JibGradlePluginExtension<Void> {
     return planBuilder.build();
   }
 
+  /**
+   * If imageName is not specified, then native-image uses the mainClass name as the executable as
+   * specified by native-gradle-plugin.
+   *
+   * @param project
+   * @param jibContainer
+   * @param properties
+   * @return
+   */
   @VisibleForTesting
-  static Optional<String> getExecutableName(
-      ContainerParameters jibContainer, Map<String, String> properties) {
+  static Optional<String> getExecutableName(Project project, ContainerParameters jibContainer,
+      Map<String, String> properties) {
     String customName = properties.get("imageName");
     if (!Strings.isNullOrEmpty(customName)) {
       return Optional.of(customName);
@@ -119,6 +130,19 @@ public class JibNativeImageExtension implements JibGradlePluginExtension<Void> {
     Optional<String> imageName = getOptionalProperty(jibContainer.getMainClass());
     if (imageName.isPresent()) {
       return imageName;
+    }
+
+    GraalVMExtension nativeImageOptions = project.getExtensions()
+        .findByType(GraalVMExtension.class);
+    if (nativeImageOptions != null) {
+      Optional<NativeImageOptions> main = nativeImageOptions.getBinaries().stream()
+          .filter(e -> e.getName().equals("main")).findFirst();
+      if (main.isPresent()) {
+        NativeImageOptions options = main.get();
+        if (options.getMainClass().isPresent()) {
+          return Optional.of(options.getMainClass().get());
+        }
+      }
     }
 
     return Optional.empty();

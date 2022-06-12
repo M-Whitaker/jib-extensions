@@ -18,6 +18,9 @@ package com.google.cloud.tools.jib.gradle.extension.nativeimage;
 
 import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.cloud.tools.jib.api.buildplan.AbsoluteUnixPath;
@@ -30,17 +33,35 @@ import com.google.cloud.tools.jib.gradle.JibExtension;
 import com.google.cloud.tools.jib.gradle.extension.GradleData;
 import com.google.cloud.tools.jib.plugins.extension.ExtensionLogger;
 import com.google.cloud.tools.jib.plugins.extension.JibPluginExtensionException;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.inject.Inject;
+import org.graalvm.buildtools.gradle.dsl.GraalVMExtension;
+import org.graalvm.buildtools.gradle.dsl.NativeImageOptions;
+import org.graalvm.buildtools.gradle.internal.BaseNativeImageOptions;
+import org.gradle.api.NamedDomainObjectContainer;
 import org.gradle.api.Project;
+import org.gradle.api.internal.DefaultPolymorphicDomainObjectContainer;
+import org.gradle.api.internal.collections.DefaultDomainObjectCollectionFactory;
+import org.gradle.api.internal.collections.DomainObjectCollectionFactory;
+import org.gradle.api.internal.provider.DefaultProperty;
 import org.gradle.internal.extensibility.DefaultConvention;
+import org.gradle.internal.impldep.com.google.api.client.googleapis.testing.TestUtils;
+import org.gradle.internal.impldep.org.sonatype.maven.polyglot.groovy.builder.factory.ObjectFactory;
+import org.gradle.internal.reflect.DirectInstantiator;
+import org.gradle.testfixtures.ProjectBuilder;
+import org.gradle.testkit.runner.GradleRunner;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -58,6 +79,10 @@ public class JibNativeImageExtensionTest {
   @Mock private ExtensionLogger logger;
   @Mock private DefaultConvention defaultConvention;
   @Mock private Project project;
+
+  private GradleRunner gradleRunner;
+
+  private final GradleData gradleData = () -> project;
   @Mock private JibExtension jibPlugin;
   @Mock private ContainerParameters jibContainer;
 
@@ -88,8 +113,32 @@ public class JibNativeImageExtensionTest {
   @Test
   public void testGetExecutableName_property() {
     Map<String, String> properties = Collections.singletonMap("imageName", "theExecutable");
-    assertThat(JibNativeImageExtension.getExecutableName(jibContainer, properties))
-        .isEqualTo(Optional.of("theExecutable"));
+    assertThat(JibNativeImageExtension.getExecutableName(project, jibContainer, properties)).isEqualTo(Optional.of("theExecutable"));
+  }
+
+  @Test
+  public void testGetExecutableName_imageName() {
+    when(jibContainer.getMainClass()).thenReturn("theExecutable");
+    assertThat(JibNativeImageExtension.getExecutableName(project, jibContainer, new HashMap<>())).isEqualTo(Optional.of("theExecutable"));
+  }
+
+  @Test
+  public void testGetExecutableName_mainClass() throws IOException {
+    Project pr = ProjectBuilder.builder().build();
+    NamedDomainObjectContainer<BaseNativeImageOptions> ndc = pr.getObjects().domainObjectContainer(BaseNativeImageOptions.class);
+    assertNotNull(ndc);
+//    ndc.create("main");
+//    GraalVMExtension graalVMExtension = mock(GraalVMExtension.class);
+//    NamedDomainObjectContainer<NativeImageOptions> ndc = pr.getObjects().domainObjectContainer(NativeImageOptions.class);
+//    when(graalVMExtension.getBinaries()).thenReturn(ndc);
+//    NativeImageOptions nio = ndc.create("main");
+//    System.out.println(nio);
+//    when(ndc.stream()).thenReturn(Stream.of(nio));
+//
+//    when(graalVMExtension.getBinaries().stream()
+//        .filter(e -> e.getName().equals("main")).findFirst().get().getMainClass()).thenReturn(new DefaultProperty<>(String.class).value("mymain"));
+
+    assertThat(JibNativeImageExtension.getExecutableName(project, jibContainer, new HashMap<>())).isEqualTo(Optional.of("mymain"));
   }
 
   @Test

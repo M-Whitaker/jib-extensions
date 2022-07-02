@@ -3,7 +3,6 @@
 This extension containerizes a [GraalVM native-image](https://www.graalvm.org/docs/reference-manual/native-image/) application configured with [Native Image Gradle Plugin](https://graalvm.github.io/native-build-tools/latest/gradle-plugin.html).
 
 The extension expects the `org.graalvm.buildtools.native` to do the heavy lifting of generating a "native image" (with the `nativeCompile` task). (The "image" in "native image" refers to an executable binary, not a container image.) Then the extension simply copies the binary, say, `<project root>/build/native/nativeCompile/com.example.mymainclass`, into a container image and sets executable bits. It also auto-sets the container image entrypoint to the binary, say, `/app/com.example.mymainclass` (unless you manually configure `container.entrypoint` in the main Jib configuration).
-However, note that this extension doesn't autoconfigure the native image name. We are required to specify it through the `imageName` property as shown in the Examples section.
 
 ## Examples
 

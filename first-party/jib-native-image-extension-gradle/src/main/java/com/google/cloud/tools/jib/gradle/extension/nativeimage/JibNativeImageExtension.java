@@ -113,15 +113,10 @@ public class JibNativeImageExtension implements JibGradlePluginExtension<Void> {
   /**
    * If imageName is not specified, then native-image uses the mainClass name as the executable as
    * specified by native-gradle-plugin.
-   *
-   * @param project
-   * @param jibContainer
-   * @param properties
-   * @return
    */
   @VisibleForTesting
-  static Optional<String> getExecutableName(Project project, ContainerParameters jibContainer,
-      Map<String, String> properties) {
+  static Optional<String> getExecutableName(
+      Project project, ContainerParameters jibContainer, Map<String, String> properties) {
     String customName = properties.get("imageName");
     if (!Strings.isNullOrEmpty(customName)) {
       return Optional.of(customName);
@@ -132,11 +127,13 @@ public class JibNativeImageExtension implements JibGradlePluginExtension<Void> {
       return imageName;
     }
 
-    GraalVMExtension nativeImageOptions = project.getExtensions()
-        .findByType(GraalVMExtension.class);
+    GraalVMExtension nativeImageOptions =
+        project.getExtensions().findByType(GraalVMExtension.class);
     if (nativeImageOptions != null) {
-      Optional<NativeImageOptions> main = nativeImageOptions.getBinaries().stream()
-          .filter(e -> e.getName().equals("main")).findFirst();
+      Optional<NativeImageOptions> main =
+          nativeImageOptions.getBinaries().stream()
+              .filter(e -> e.getName().equals("main"))
+              .findFirst();
       if (main.isPresent()) {
         NativeImageOptions options = main.get();
         if (options.getMainClass().isPresent()) {
